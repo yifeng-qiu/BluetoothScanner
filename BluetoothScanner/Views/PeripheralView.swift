@@ -10,20 +10,19 @@ import CoreBluetooth
 
 struct PeripheralView : View{
     @StateObject var peripheral : MyPeripheral
-    @State var status: String = "Pending"
     var body: some View {
         List{
             Section {
                 Button {
-                    if status == "Disconnected"{
+                    if peripheral.status == "Disconnected"{
                         peripheral.connect()
                     }else{
                         peripheral.disconnect()
                     }
                 } label: {
-                    if status == "Connected"{
+                    if peripheral.status == "Connected"{
                         Text("Disconnect")
-                    }else if status == "Disconnected"{
+                    }else if peripheral.status == "Disconnected"{
                         Text("Connect")
                     }else{
                         Text("Cancel")
@@ -37,9 +36,7 @@ struct PeripheralView : View{
             
             Section {
                 HStack{
-                    Text(status).onReceive((peripheral.peripheral?.publisher(for: \.state))!) { output in
-                        status = output.string
-                    }
+                    Text(peripheral.status)
                     .frame(maxWidth: .infinity)
                     Divider()
                     Text("RSSI: \(peripheral.lastDetectedRSSI.dBm)").frame(maxWidth: .infinity)
@@ -65,10 +62,6 @@ struct PeripheralView : View{
             } header: {
                 Text("Available Services")
             }
-//            .onReceive(peripheral.$services) { services in
-//                discoveredServices = services
-//            }
-            
             Section{
                 ForEach(Array(peripheral.peripherasAdvertisementData.keys), id:\.self){key in
                     if let nextItem = peripheral.peripherasAdvertisementData[key] as? String{

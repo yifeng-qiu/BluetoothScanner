@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreBluetooth
+import Combine
 
 class MyPeripheral: NSObject, ObservableObject{
     @Published var isConnectable : Bool = false
@@ -24,18 +25,24 @@ class MyPeripheral: NSObject, ObservableObject{
     
     let viewModel  : BluetoothViewModel
     var scannedData : [PeripheralData] = []
-    
+    var cancellable : Cancellable?
     init(for Peripheral:CBPeripheral,
          under viewModel: BluetoothViewModel,
          with peripherasAdvertisementData : Dictionary<String, Any> = Dictionary<String, Any>() ){
         self.peripheral = Peripheral
         self.viewModel = viewModel
         self.peripherasAdvertisementData = peripherasAdvertisementData
+        super.init()
+        cancellable = peripheral?.publisher(for: \.state)
+            .sink(receiveValue: {[weak self] state in
+                self?.status = state.string
+            })
     }
     
     func connect(){
         print("DEBUG: trying to connect to \(name)")
         self.viewModel.connect(peripheral: self.peripheral!)
+        
     }
     
     func disconnect(){
@@ -62,7 +69,7 @@ extension MyPeripheral: CBPeripheralDelegate{
         }
         
         if let services = peripheral.services{
-//            print("DEBUG: discovered services")
+            //            print("DEBUG: discovered services")
             self.services = services
             for service in self.services {
                 let results = scannedData.filter {$0.id == service.uuid}
@@ -139,7 +146,7 @@ extension MyPeripheral: CBPeripheralDelegate{
         guard let serviceDataObj = scannedData.first(where:{$0.id == service.uuid}) else {return}
         guard let characteristicDataObj = serviceDataObj.children!.first(where:{$0.id == characteristic.uuid}) else {return}
         
-//        if let value = descriptor.value{print(value)}
+        //        if let value = descriptor.value{print(value)}
         if characteristicDataObj.children == nil{
             characteristicDataObj.children = []
         }
